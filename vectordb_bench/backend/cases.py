@@ -108,7 +108,8 @@ class CapacityCase(Case, BaseModel):
 class PerformanceCase(Case, BaseModel):
     label: CaseLabel = CaseLabel.Performance
     filter_rate: float | None = None
-
+    load_timeout: float | int = config.LOAD_TIMEOUT_DEFAULT
+    optimize_timeout: float | int | None = config.OPTIMIZE_TIMEOUT_DEFAULT
 
 class CapacityDim960(CapacityCase):
     case_id: CaseType = CaseType.CapacityDim960
