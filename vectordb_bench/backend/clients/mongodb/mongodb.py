@@ -84,6 +84,14 @@ class MongoDB(VectorDB):
                 log.info(f"Drop index: {index_name}")
                 try:
                     self.collection.drop_search_index(index_name)
+                    while True:
+                        indices = list(self.collection.list_search_indexes())
+                        indices = [idx for idx in indices if idx["name"] == index_name]
+                        log.debug(f"index status {indices}")
+                        if len(indices) == 0:
+                            break
+                        else:
+                            log.info(f"index deleting {indices}")                    
                 except Exception as e:
                     log.error(f"Error drop index: {str(e)}")
         try:
@@ -142,8 +150,7 @@ class MongoDB(VectorDB):
         
         # Use ordered=False for better insert performance
         try:
-            less_documents = documents[:1]
-            self.collection.insert_many(less_documents, ordered=False)
+            self.collection.insert_many(documents, ordered=False)
         except Exception as e:
             return 0, e
         return len(documents), None

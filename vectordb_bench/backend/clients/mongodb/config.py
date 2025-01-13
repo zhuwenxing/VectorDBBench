@@ -32,7 +32,7 @@ class MongoDBIndexConfig(BaseModel, DBCaseConfig):
             "fields": [{
                 "type": "vector",
                 "similarity": self.parse_metric(),
-                "dimensions": None,  # Will be set in MongoDB class
+                "numDimensions": None,  # Will be set in MongoDB class
                 "path": "vector"  # Vector field name
             }]
         }
