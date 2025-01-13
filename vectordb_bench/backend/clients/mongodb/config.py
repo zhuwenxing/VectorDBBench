@@ -4,7 +4,7 @@ from ..api import DBCaseConfig, DBConfig, IndexType, MetricType
 
 
 class MongoDBConfig(DBConfig, BaseModel):
-    connection_string: SecretStr = "xx"
+    connection_string: SecretStr = "mongodb+srv://<user>:<password>@<cluster_name>.heatl.mongodb.net"
     database: str = "vdb_bench"
     def to_dict(self) -> dict:
         return {

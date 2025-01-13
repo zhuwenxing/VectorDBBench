@@ -35,27 +35,34 @@ class MongoDB(VectorDB):
         # Update index dimensions
         index_params = self.case_config.index_param()
         log.info(f"MongoDB client config: {self.db_config}, index params: {index_params}")
-        index_params["fields"][0]["dimensions"] = dim
+        index_params["fields"][0]["numDimensions"] = dim
+        self.index_params = index_params
         
-        # Initialize these as None - they'll be set in init()
+
+
+        # Initialize  - they'll also be set in init()
+        uri = self.db_config["connection_string"]
+        self.client =  MongoClient(uri)
+        self.db = self.client[self.db_config["database"]]
+        self.collection = self.db[self.collection_name]
+        if self.drop_old and self.collection_name in self.db.list_collection_names():
+            log.info(f"MongoDB client dropping old collection: {self.collection_name}")
+            self.db.drop_collection(self.collection_name)
         self.client = None
-        self.db = None
+        self.db =None
         self.collection = None
+        
+
+
 
     @contextmanager
     def init(self):
         """Initialize MongoDB client and cleanup when done"""
         try:
-            if self.client is None:
-                uri = self.db_config["connection_string"]
-                self.client = MongoClient(uri)
-                self.db = self.client[self.db_config["database"]]
-                
-                if self.drop_old and self.collection_name in self.db.list_collection_names():
-                    log.info(f"MongoDB client dropping old collection: {self.collection_name}")
-                    self.db.drop_collection(self.collection_name)
-
-                self.collection = self.db[self.collection_name]
+            uri = self.db_config["connection_string"]
+            self.client = MongoClient(uri)
+            self.db = self.client[self.db_config["database"]]
+            self.collection = self.db[self.collection_name]
                 
             yield
         finally:
@@ -67,9 +74,18 @@ class MongoDB(VectorDB):
 
     def _create_index(self) -> None:
         """Create vector search index"""
-        index_name = "vector_index"
-        index_params = self.case_config.index_param()
-        
+        index_name = f"vector_index"
+        index_params = self.index_params
+        log.info(f"index params {index_params}")
+        # drop index if already exists
+        if self.collection.list_indexes():
+            all_indexes = self.collection.list_search_indexes()
+            if any(idx.get("name") == index_name for idx in all_indexes):
+                log.info(f"Drop index: {index_name}")
+                try:
+                    self.collection.drop_search_index(index_name)
+                except Exception as e:
+                    log.error(f"Error drop index: {str(e)}")
         try:
             # Create vector search index
             search_index = SearchIndexModel(
@@ -88,14 +104,19 @@ class MongoDB(VectorDB):
             
         except Exception as e:
             log.error(f"Error creating index: {str(e)}")
-            raise
+            raise e 
 
     def _wait_for_index_ready(self, index_name: str, check_interval: int = 5) -> None:
         """Wait for index to be ready"""
         while True:
             indices = list(self.collection.list_search_indexes())
+            log.debug(f"index status {indices}")
             if indices and any(idx.get("name") == index_name and idx.get("queryable") for idx in indices):
                 break
+            for idx in indices:
+                if idx.get("name") == index_name and idx.get("status") == "FAILED":
+                    raise Exception(f"Index {index_name} failed to build")
+
             time.sleep(check_interval)
         log.info(f"Index {index_name} is ready")
 
@@ -121,7 +142,7 @@ class MongoDB(VectorDB):
         
         # Use ordered=False for better insert performance
         try:
-            less_documents = documents[:10]
+            less_documents = documents[:1]
             self.collection.insert_many(less_documents, ordered=False)
         except Exception as e:
             return 0, e
@@ -179,12 +200,13 @@ class MongoDB(VectorDB):
 
     def optimize(self) -> None:
         """MongoDB vector search indexes are self-optimizing"""
+        log.info("optimize for search")
         self._create_index()
         self._wait_for_index_ready("vector_index")
 
     def optimize_with_size(self, data_size: int) -> None:
         """MongoDB vector search indexes are self-optimizing"""
-        pass
+        self.optimize()
 
     def ready_to_load(self) -> None:
         """MongoDB is always ready to load"""
