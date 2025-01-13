@@ -40,6 +40,7 @@ class DB(Enum):
     AliyunElasticsearch = "AliyunElasticsearch"
     Test = "test"
     AliyunOpenSearch = "AliyunOpenSearch"
+    MongoDB = "MongoDB"
 
 
     @property
@@ -113,6 +114,10 @@ class DB(Enum):
             from .aliyun_opensearch.aliyun_opensearch import AliyunOpenSearch
             return AliyunOpenSearch
 
+        if self == DB.MongoDB:
+            from .mongodb.mongodb import MongoDB
+            return MongoDB
+
     @property
     def config_cls(self) -> Type[DBConfig]:
         """Import while in use"""
@@ -183,6 +188,10 @@ class DB(Enum):
         if self == DB.AliyunOpenSearch:
             from .aliyun_opensearch.config import AliyunOpenSearchConfig
             return AliyunOpenSearchConfig
+        
+        if self == DB.MongoDB:
+            from .mongodb.config import MongoDBConfig
+            return MongoDBConfig
 
     def case_config_cls(self, index_type: IndexType | None = None) -> Type[DBCaseConfig]:
         if self == DB.Milvus:
@@ -236,6 +245,10 @@ class DB(Enum):
         if self == DB.AliyunOpenSearch:
             from .aliyun_opensearch.config import AliyunOpenSearchIndexConfig
             return AliyunOpenSearchIndexConfig
+        
+        if self == DB.MongoDB:
+            from .mongodb.config import MongoDBIndexConfig
+            return MongoDBIndexConfig
 
         # DB.Pinecone, DB.Chroma, DB.Redis
         return EmptyDBCaseConfig
