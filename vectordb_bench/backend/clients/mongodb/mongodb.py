@@ -167,7 +167,7 @@ class MongoDB(VectorDB):
         else:
             # Set numCandidates based on k value and data size
             # For 50K dataset, use higher multiplier for better recall
-            num_candidates = min(10000, max(k * 20, search_params["numCandidates"] or 0))
+            num_candidates = min(10000, k * 10)
             vector_search["numCandidates"] = num_candidates
 
         # Add filter if specified
