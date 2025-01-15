@@ -176,7 +176,7 @@ class MongoDB(VectorDB):
             vector_search["filter"] = {
                 "id": {"gt": filters["id"]},
             }
-
+        log.info(f"search param {vector_search}")
         pipeline = [
             {"$vectorSearch": vector_search},
             {
