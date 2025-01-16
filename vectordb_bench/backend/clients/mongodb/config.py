@@ -36,6 +36,7 @@ class MongoDBIndexConfig(BaseModel, DBCaseConfig):
                     "similarity": self.parse_metric(),
                     "numDimensions": None,  # Will be set in MongoDB class
                     "path": "vector",  # Vector field name
+                    "quantization": "binary"
                 }
             ],
         }
